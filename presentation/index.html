@@ -53,12 +53,26 @@
     .check span { color:var(--muted); font-size:.92rem; }
     .tick { flex:none; width:25px; height:25px; border-radius:50%; display:grid; place-items:center; color:#fff; background:var(--teal); font-weight:900; }
     .footer { padding:35px 0 65px; color:var(--muted); border-top:1px solid var(--line); font-size:.9rem; }
+    .technical { background:#f0f3fa; border-top:1px solid #e0e5f0; border-bottom:1px solid #e0e5f0; }
+    .tech-grid { display:grid; grid-template-columns:1.2fr .8fr; gap:18px; }
+    .table-wrap { overflow:auto; border:1px solid var(--line); border-radius:18px; background:#fff; }
+    table { width:100%; border-collapse:collapse; min-width:620px; }
+    th,td { padding:13px 15px; text-align:left; border-bottom:1px solid var(--line); vertical-align:top; }
+    th { color:var(--muted); font-size:.78rem; text-transform:uppercase; letter-spacing:.08em; background:#fafbfe; }
+    td { font-size:.92rem; }
+    td small { color:var(--muted); display:block; margin-top:3px; }
+    tr:last-child td { border-bottom:0; }
+    pre { margin:0; overflow:auto; padding:18px; border-radius:15px; background:#172033; color:#dce7ff; font: .82rem/1.65 ui-monospace, SFMono-Regular, Consolas, monospace; }
+    .code-label { color:var(--muted); font-size:.8rem; font-weight:800; margin:0 0 8px; text-transform:uppercase; letter-spacing:.09em; }
+    .code-card { background:#fff; border:1px solid var(--line); border-radius:20px; padding:18px; }
+    .sample-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:18px; }
+    .architecture { border:1px solid var(--line); border-radius:22px; background:#fff; padding:12px; }
     code { padding:2px 6px; border-radius:6px; background:#f0eee9; font-size:.9em; }
-    @media(max-width:800px) { .hero,.split { grid-template-columns:1fr; } .grid { grid-template-columns:1fr; } .flow { grid-template-columns:1fr; } .flow-card:not(:last-child)::after { content:'↓'; right:48%; top:auto; bottom:-24px; } .navlinks { display:none; } section { padding:55px 0; } }
+    @media(max-width:800px) { .hero,.split,.tech-grid { grid-template-columns:1fr; } .grid,.sample-grid { grid-template-columns:1fr; } .flow { grid-template-columns:1fr; } .flow-card:not(:last-child)::after { content:'↓'; right:48%; top:auto; bottom:-24px; } .navlinks { display:none; } section { padding:55px 0; } }
   </style>
 </head>
 <body>
-  <header class="top"><div class="wrap nav"><div class="brand"><span class="mark">✦</span> Cloud 2007 · the friendly tour</div><nav class="navlinks"><a href="#story">Story</a><a href="#map">Map</a><a href="#signals">Signals</a><a href="#try">Try it</a></nav></div></header>
+  <header class="top"><div class="wrap nav"><div class="brand"><span class="mark">✦</span> Cloud 2007 · the friendly tour</div><nav class="navlinks"><a href="#story">Story</a><a href="#map">Map</a><a href="#technical">Technical</a><a href="#signals">Signals</a><a href="#try">Try it</a></nav></div></header>
 
   <main>
     <section class="wrap hero">
@@ -86,7 +100,82 @@
     <section id="try" class="wrap"><div class="split"><div><div class="eyebrow">05 · Try the tour</div><h2>Three windows into the running project.</h2><p>Open these links from the same machine running Docker Desktop. They are all routed through the kind cluster.</p><a class="button" href="http://game-2048.localhost">Open the demo app ↗</a></div><div class="checklist"><div class="check"><div class="tick">1</div><div><b>Play the app</b><span><a href="http://game-2048.localhost">game-2048.localhost</a> shows the workload being watched.</span></div></div><div class="check"><div class="tick">2</div><div><b>Ask the API</b><span><a href="http://ai-monitoring.localhost/predict/current">/predict/current</a> shows the latest live estimate.</span></div></div><div class="check"><div class="tick">3</div><div><b>See the control room</b><span><a href="http://grafana.localhost">grafana.localhost</a> is where charts and logs can be explored.</span></div></div></div></div></section>
 
     <section class="wrap"><div class="card"><div class="eyebrow">Tiny glossary</div><h2>Words without the cloud fog.</h2><div class="grid"><div><h3>Pod</h3><p>A small package where an application runs.</p></div><div><h3>Ingress</h3><p>The front door that sends a browser request to the right service.</p></div><div><h3>Container</h3><p>A tidy box holding the app and its dependencies.</p></div></div></div></section>
+ 
+     <section id="technical" class="technical"><div class="wrap"><div class="section-head"><div class="eyebrow">Technical layer</div><h2>Under the hood: the component map.</h2><p>This is the same story with Kubernetes names, namespaces, ports, and responsibilities included.</p></div><div class="tech-grid"><div class="table-wrap"><table><thead><tr><th>Component</th><th>Where it runs</th><th>What it does</th></tr></thead><tbody><tr><td><strong>Game 2048</strong><small>Deployment + Service</small></td><td><code>game-2048</code><small>Ingress: game-2048.localhost</small></td><td>Demo workload that supplies a browser-facing application.</td></tr><tr><td><strong>Alloy logs</strong><small>DaemonSet</small></td><td><code>monitoring</code></td><td>Reads container log files from every kind node and forwards them to Loki.</td></tr><tr><td><strong>Loki</strong><small>Gateway + distributed components</small></td><td><code>monitoring</code><small>HTTP service port 80</small></td><td>Stores and queries structured log streams. MinIO provides shared object storage.</td></tr><tr><td><strong>Mimir / Tempo</strong><small>LGTM stack</small></td><td><code>monitoring</code></td><td>Mimir stores metrics; Tempo stores traces; Grafana queries all three.</td></tr><tr><td><strong>Prediction API</strong><small>FastAPI Deployment</small></td><td><code>ai-monitoring</code><small>Service port 8080</small></td><td>Queries Loki, transforms records, runs the model, and exposes JSON and Prometheus endpoints.</td></tr><tr><td><strong>Dashboard</strong><small>Streamlit Deployment</small></td><td><code>ai-monitoring</code><small>Service port 8501</small></td><td>Human-friendly view over the prediction API and recent log evidence.</td></tr></tbody></table></div><div class="architecture"><svg viewBox="0 0 500 430" role="img" aria-label="Technical component map"><rect width="500" height="430" rx="20" fill="#f8f9ff"/><text x="25" y="35" fill="#65708a" font-size="14" font-weight="800">KIND CLUSTER · cloud2007</text><rect x="25" y="60" width="450" height="90" rx="14" fill="#e7edff" stroke="#bac8fa"/><text x="45" y="88" fill="#4263eb" font-weight="800">game-2048 namespace</text><rect x="48" y="103" width="115" height="27" rx="8" fill="#fff"/><text x="63" y="121" font-size="13">Ingress</text><rect x="188" y="103" width="115" height="27" rx="8" fill="#fff"/><text x="210" y="121" font-size="13">Service</text><rect x="328" y="103" width="115" height="27" rx="8" fill="#fff"/><text x="349" y="121" font-size="13">Pods</text><path d="M305 116h21M165 116h21" stroke="#f08c46" stroke-width="3"/><rect x="25" y="180" width="450" height="95" rx="14" fill="#e6faf5" stroke="#acdcd2"/><text x="45" y="208" fill="#168c7e" font-weight="800">monitoring namespace</text><rect x="48" y="223" width="105" height="28" rx="8" fill="#fff"/><text x="72" y="242" font-size="13">Alloy</text><rect x="173" y="223" width="105" height="28" rx="8" fill="#fff"/><text x="201" y="242" font-size="13">Loki</text><rect x="298" y="223" width="105" height="28" rx="8" fill="#fff"/><text x="321" y="242" font-size="13">Grafana</text><path d="M155 237h15M280 237h15" stroke="#18a999" stroke-width="3"/><rect x="25" y="305" width="450" height="95" rx="14" fill="#fff0e6" stroke="#f5c59d"/><text x="45" y="333" fill="#d66920" font-weight="800">ai-monitoring namespace</text><rect x="48" y="348" width="130" height="28" rx="8" fill="#fff"/><text x="70" y="367" font-size="13">FastAPI</text><rect x="205" y="348" width="130" height="28" rx="8" fill="#fff"/><text x="225" y="367" font-size="13">Streamlit</text><path d="M180 362h25M250 151v29M350 275v30" stroke="#f08c46" stroke-width="3" stroke-dasharray="7 7"/></svg></div></div></div></section>
+ 
+     <section class="wrap"><div class="section-head"><div class="eyebrow">Technical layer · samples</div><h2>See the packets moving.</h2><p>These are small pieces you can copy into a terminal or Grafana Explore while the cluster is running.</p></div><div class="sample-grid"><div class="code-card"><div class="code-label">Live prediction · PowerShell</div><pre>Invoke-RestMethod http://ai-monitoring.localhost/predict/current
+ 
+ # example response
+ {
+   "predicted_failure": false,
+   "failure_probability": 0.2982,
+   "risk_level": "normal",
+   "records_analyzed": 104
+ }</pre></div><div class="code-card"><div class="code-label">Loki query · LogQL</div><pre>{namespace="ai-monitoring"}
+ 
+ # narrow to warning-like events
+ {namespace="ai-monitoring"}
+   | json
+   | event_type =~ "timeout|http_error|crash_loop"
+ 
+ # query endpoint
+ /loki/api/v1/query_range</pre></div><div class="code-card"><div class="code-label">Health and metrics</div><pre>GET /health
+ GET /model
+ GET /metrics/
+ 
+ # Kubernetes checks
+ kubectl get pods -A
+ kubectl get ingress -A
+ kubectl logs -n ai-monitoring deployment/log-generator --tail=20</pre></div><div class="code-card"><div class="code-label">Example event · JSONL</div><pre>{
+   "timestamp": "2026-09-20T04:52:22Z",
+   "namespace": "ai-monitoring",
+   "event_type": "latency_spike",
+   "latency_ms": 912,
+   "error_rate": 0.17,
+   "message": "request latency above threshold"
+ }</pre></div></div></section>
+ 
+     <section class="wrap"><div class="section-head"><div class="eyebrow">Technical layer · ML pipeline</div><h2>How raw logs become a prediction.</h2><p>The training and serving code live in <code>src/train.py</code>, <code>src/features.py</code>, and <code>src/api.py</code>.</p></div><div class="flow"><div class="flow-card"><div class="num">1</div><h3>Collect</h3><p>Loki returns a recent log window.</p><span class="pill">query_range</span></div><div class="flow-card"><div class="num">2</div><h3>Normalize</h3><p>Records become a consistent data frame.</p><span class="pill">features.py</span></div><div class="flow-card"><div class="num">3</div><h3>Vectorize</h3><p>Text becomes TF-IDF features.</p><span class="pill">scikit-learn</span></div><div class="flow-card"><div class="num">4</div><h3>Classify</h3><p>Logistic regression estimates risk.</p><span class="pill">model.joblib</span></div><div class="flow-card"><div class="num">5</div><h3>Serve</h3><p>FastAPI returns JSON and metrics.</p><span class="pill">/predict</span></div></div></section>
+ 
   </main>
   <footer class="footer"><div class="wrap">Built for Cloud 2007 · A friendly explanation of the Kubernetes log-analysis project.</div></footer>
 </body>
 </html>
+<!--
+
+    <section id="technical" class="technical"><div class="wrap"><div class="section-head"><div class="eyebrow">Technical layer</div><h2>Under the hood: the component map.</h2><p>This is the same story with Kubernetes names, namespaces, ports, and responsibilities included.</p></div><div class="tech-grid"><div class="table-wrap"><table><thead><tr><th>Component</th><th>Where it runs</th><th>What it does</th></tr></thead><tbody><tr><td><strong>Game 2048</strong><small>Deployment + Service</small></td><td><code>game-2048</code><small>Ingress: game-2048.localhost</small></td><td>Demo workload that supplies a browser-facing application.</td></tr><tr><td><strong>Alloy logs</strong><small>DaemonSet</small></td><td><code>monitoring</code></td><td>Reads container log files from every kind node and forwards them to Loki.</td></tr><tr><td><strong>Loki</strong><small>Gateway + distributed components</small></td><td><code>monitoring</code><small>HTTP service port 80</small></td><td>Stores and queries structured log streams. MinIO provides shared object storage.</td></tr><tr><td><strong>Mimir / Tempo</strong><small>LGTM stack</small></td><td><code>monitoring</code></td><td>Mimir stores metrics; Tempo stores traces; Grafana queries all three.</td></tr><tr><td><strong>Prediction API</strong><small>FastAPI Deployment</small></td><td><code>ai-monitoring</code><small>Service port 8080</small></td><td>Queries Loki, transforms records, runs the model, and exposes JSON and Prometheus endpoints.</td></tr><tr><td><strong>Dashboard</strong><small>Streamlit Deployment</small></td><td><code>ai-monitoring</code><small>Service port 8501</small></td><td>Human-friendly view over the prediction API and recent log evidence.</td></tr></tbody></table></div><div class="architecture"><svg viewBox="0 0 500 430" role="img" aria-label="Technical component map"><rect width="500" height="430" rx="20" fill="#f8f9ff"/><text x="25" y="35" fill="#65708a" font-size="14" font-weight="800">KIND CLUSTER · cloud2007</text><rect x="25" y="60" width="450" height="90" rx="14" fill="#e7edff" stroke="#bac8fa"/><text x="45" y="88" fill="#4263eb" font-weight="800">game-2048 namespace</text><rect x="48" y="103" width="115" height="27" rx="8" fill="#fff"/><text x="63" y="121" font-size="13">Ingress</text><rect x="188" y="103" width="115" height="27" rx="8" fill="#fff"/><text x="210" y="121" font-size="13">Service</text><rect x="328" y="103" width="115" height="27" rx="8" fill="#fff"/><text x="349" y="121" font-size="13">Pods</text><path d="M305 116h21M165 116h21" stroke="#f08c46" stroke-width="3"/><rect x="25" y="180" width="450" height="95" rx="14" fill="#e6faf5" stroke="#acdcd2"/><text x="45" y="208" fill="#168c7e" font-weight="800">monitoring namespace</text><rect x="48" y="223" width="105" height="28" rx="8" fill="#fff"/><text x="72" y="242" font-size="13">Alloy</text><rect x="173" y="223" width="105" height="28" rx="8" fill="#fff"/><text x="201" y="242" font-size="13">Loki</text><rect x="298" y="223" width="105" height="28" rx="8" fill="#fff"/><text x="321" y="242" font-size="13">Grafana</text><path d="M155 237h15M280 237h15" stroke="#18a999" stroke-width="3"/><rect x="25" y="305" width="450" height="95" rx="14" fill="#fff0e6" stroke="#f5c59d"/><text x="45" y="333" fill="#d66920" font-weight="800">ai-monitoring namespace</text><rect x="48" y="348" width="130" height="28" rx="8" fill="#fff"/><text x="70" y="367" font-size="13">FastAPI</text><rect x="205" y="348" width="130" height="28" rx="8" fill="#fff"/><text x="225" y="367" font-size="13">Streamlit</text><path d="M180 362h25M250 151v29M350 275v30" stroke="#f08c46" stroke-width="3" stroke-dasharray="7 7"/></svg></div></div></div></section>
+
+    <section class="wrap"><div class="section-head"><div class="eyebrow">Technical layer · samples</div><h2>See the packets moving.</h2><p>These are small pieces you can copy into a terminal or Grafana Explore while the cluster is running.</p></div><div class="sample-grid"><div class="code-card"><div class="code-label">Live prediction · PowerShell</div><pre>Invoke-RestMethod http://ai-monitoring.localhost/predict/current
+
+# example response
+{
+  "predicted_failure": false,
+  "failure_probability": 0.2982,
+  "risk_level": "normal",
+  "records_analyzed": 104
+}</pre></div><div class="code-card"><div class="code-label">Loki query · LogQL</div><pre>{namespace="ai-monitoring"}
+
+# narrow to warning-like events
+{namespace="ai-monitoring"}
+  | json
+  | event_type =~ "timeout|http_error|crash_loop"
+
+# query endpoint
+/loki/api/v1/query_range</pre></div><div class="code-card"><div class="code-label">Health and metrics</div><pre>GET /health
+GET /model
+GET /metrics/
+
+# Kubernetes checks
+kubectl get pods -A
+kubectl get ingress -A
+kubectl logs -n ai-monitoring deployment/log-generator --tail=20</pre></div><div class="code-card"><div class="code-label">Example event · JSONL</div><pre>{
+  "timestamp": "2026-09-20T04:52:22Z",
+  "namespace": "ai-monitoring",
+  "event_type": "latency_spike",
+  "latency_ms": 912,
+  "error_rate": 0.17,
+  "message": "request latency above threshold"
+}</pre></div></div></section>
+
+    <section class="wrap"><div class="section-head"><div class="eyebrow">Technical layer · ML pipeline</div><h2>How raw logs become a prediction.</h2><p>The training and serving code live in <code>src/train.py</code>, <code>src/features.py</code>, and <code>src/api.py</code>.</p></div><div class="flow"><div class="flow-card"><div class="num">1</div><h3>Collect</h3><p>Loki returns a recent log window.</p><span class="pill">query_range</span></div><div class="flow-card"><div class="num">2</div><h3>Normalize</h3><p>Records become a consistent data frame.</p><span class="pill">features.py</span></div><div class="flow-card"><div class="num">3</div><h3>Vectorize</h3><p>Text becomes TF-IDF features.</p><span class="pill">scikit-learn</span></div><div class="flow-card"><div class="num">4</div><h3>Classify</h3><p>Logistic regression estimates risk.</p><span class="pill">model.joblib</span></div><div class="flow-card"><div class="num">5</div><h3>Serve</h3><p>FastAPI returns JSON and metrics.</p><span class="pill">/predict</span></div></div></section>
+-->

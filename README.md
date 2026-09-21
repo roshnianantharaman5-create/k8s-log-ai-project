@@ -34,7 +34,7 @@ Endpoints:
 ## Deploy the project walkthrough
 
 ```powershell
-docker build -t project-presentation:0.1.0 presentation
-C:\Users\roshn\bin\kind.exe load docker-image project-presentation:0.1.0 --name cloud2007
+docker build -t project-presentation:0.2.0 presentation
+C:\Users\roshn\bin\kind.exe load docker-image project-presentation:0.2.0 --name cloud2007
 kubectl apply -f k8s/presentation.yaml
 ```
