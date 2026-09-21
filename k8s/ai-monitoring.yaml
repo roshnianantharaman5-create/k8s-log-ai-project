@@ -1,0 +1,173 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ai-monitoring
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: log-generator
+  namespace: ai-monitoring
+  labels:
+    app.kubernetes.io/name: log-generator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: log-generator
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: log-generator
+        app.kubernetes.io/part-of: demo-2048
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: cloud2007-control-plane
+      tolerations:
+        - operator: Exists
+          effect: NoSchedule
+      containers:
+        - name: log-generator
+          image: k8s-log-ai:0.1.1
+          imagePullPolicy: IfNotPresent
+          args: ["src/synthetic.py", "--stream", "--interval", "2"]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prediction-api
+  namespace: ai-monitoring
+  labels:
+    app.kubernetes.io/name: prediction-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: prediction-api
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: prediction-api
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: cloud2007-control-plane
+      tolerations:
+        - operator: Exists
+          effect: NoSchedule
+      containers:
+        - name: prediction-api
+          image: k8s-log-ai:0.1.1
+          imagePullPolicy: IfNotPresent
+          command: ["uvicorn"]
+          args: ["api:app", "--host", "0.0.0.0", "--port", "8080"]
+          env:
+            - name: LOKI_URL
+              value: http://lgtm-loki-gateway.monitoring.svc.cluster.local
+            - name: LOKI_QUERY
+              value: '{namespace="ai-monitoring"}'
+          ports:
+            - name: http
+              containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prediction-api
+  namespace: ai-monitoring
+spec:
+  selector:
+    app.kubernetes.io/name: prediction-api
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dashboard
+  namespace: ai-monitoring
+  labels:
+    app.kubernetes.io/name: dashboard
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: dashboard
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: dashboard
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: cloud2007-control-plane
+      tolerations:
+        - operator: Exists
+          effect: NoSchedule
+      containers:
+        - name: dashboard
+          image: k8s-log-ai:0.1.1
+          imagePullPolicy: IfNotPresent
+          command: ["streamlit"]
+          args: ["run", "src/dashboard.py", "--server.address=0.0.0.0", "--server.port=8501", "--server.headless=true"]
+          env:
+            - name: PREDICTION_API_URL
+              value: http://prediction-api.ai-monitoring.svc.cluster.local:8080
+          ports:
+            - name: http
+              containerPort: 8501
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dashboard
+  namespace: ai-monitoring
+spec:
+  selector:
+    app.kubernetes.io/name: dashboard
+  ports:
+    - name: http
+      port: 8501
+      targetPort: http
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: prediction-api
+  namespace: ai-monitoring
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: ai-monitoring.localhost
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: prediction-api
+                port:
+                  number: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: dashboard
+  namespace: ai-monitoring
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: dashboard.localhost
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: dashboard
+                port:
+                  number: 8501

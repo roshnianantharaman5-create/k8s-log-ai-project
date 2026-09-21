@@ -1,0 +1,11 @@
+{
+  "numeric_columns": [
+    "latency_ms",
+    "restart_count",
+    "error_rate",
+    "cpu_pct",
+    "memory_pct",
+    "error_count_5m",
+    "warning_count_5m"
+  ]
+}
